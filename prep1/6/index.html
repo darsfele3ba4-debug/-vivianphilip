@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>درس × لعبة - القوى المغناطيسية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap');
+        body { font-family: 'Tajawal', sans-serif; background-color: #f0fdfa; user-select: none; overflow-x: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); }
+        .btn-bounce { transition: transform 0.2s; }
+        .btn-bounce:active { transform: scale(0.95); }
+        
+        /* Matching Game Styles */
+        .match-item { transition: all 0.3s; }
+        .match-item.selected { background-color: #fef08a; border-color: #eab308; transform: scale(1.05); }
+        .match-item.matched { background-color: #86efac; border-color: #22c55e; opacity: 0.7; pointer-events: none; }
+        .match-item.error { background-color: #fca5a5; border-color: #ef4444; animation: shake 0.5s; }
+        .match-item.timeout-error { background-color: #fecaca; border-color: #ef4444; opacity: 0.6; pointer-events: none; }
+        
+        /* Bubbles Style */
+        .game-bubble {
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(186, 230, 253, 0.7) 60%, rgba(56, 189, 248, 0.4));
+            box-shadow: inset 0 0 15px rgba(255,255,255,0.8), 0 4px 10px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.6);
+            backdrop-filter: blur(4px);
+            color: #0c4a6e;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+        }
+
+        /* Targets Style */
+        .horizontal-target {
+            background-color: white;
+            border: 4px solid;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Robust CSS Animations */
+        @keyframes fallDown { from { top: -150px; } to { top: 120%; } }
+        @keyframes moveRight { from { left: -150px; } to { left: 120%; } }
+        @keyframes moveLeft { from { left: 100%; } to { left: -150px; } }
+        
+        .anim-fall { animation: fallDown 40s linear forwards; }
+        .anim-right { animation: moveRight 35s linear forwards; }
+        .anim-left { animation: moveLeft 35s linear forwards; }
+
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+        .popup-anim { animation: popIn 0.3s ease-out forwards; }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen pb-20 relative">
+
+    <!-- GLOBAL FIXED HEADER (Safe top bar for logo) -->
+    <header class="fixed top-0 w-full bg-white/95 backdrop-blur-md shadow-sm z-50 h-20 flex items-center px-4 md:px-8 border-b border-teal-100 transition-all">
+        <h1 class="font-extrabold text-teal-800 text-lg md:text-2xl drop-shadow-sm">درس × لعبة</h1>
+    </header>
+
+    <!-- Main Container (Pushed down to avoid overlap with fixed header) -->
+    <div class="max-w-4xl mx-auto p-4 relative pt-28" id="main-container">
+        
+        <!-- Main Dashboard Screen -->
+        <div id="screen-home" class="space-y-6">
+            <!-- Header Section -->
+            <div class="glass-panel rounded-2xl p-6 shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center gap-6 mt-4">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-teal-200 rounded-full opacity-50 blur-xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-200 rounded-full opacity-50 blur-xl"></div>
+                
+                <div class="w-full md:w-1/2 text-center md:text-right z-10 flex flex-col justify-center">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-700 mb-2">الصف الأول الإعدادي - الترم الأول</h2>
+                    <h3 class="text-xl md:text-2xl text-teal-600 font-extrabold mb-4">درس: القوى المغناطيسية</h3>
+                    
+                    <div class="mt-4 border-t border-teal-100 pt-4">
+                        <p class="text-sm text-gray-500 font-bold">مع الأستاذة</p>
+                        <p class="text-2xl font-bold text-teal-800">م ڤيڤيان فيليب</p>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-1/2 z-10 flex justify-center md:justify-end">
+                    <img src="data:image/jpeg;base64,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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//2Q==" alt="شعار م ڤيڤيان فيليب" class="w-64 sm:w-80 md:w-full md:max-w-[340px] rounded-2xl border-4 border-teal-400 shadow-xl object-contain" style="background:#fdf4c6;">
+                </div>
+            </div>
+
+            <h3 class="text-center font-bold text-gray-600 mt-8 mb-4">اختر اللعبة لتبدأ التحدي</h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- 1. MCQ -->
+                <button onclick="startGame('mcq')" class="btn-bounce bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl shadow-md flex items-center justify-between">
+                    <div class="text-right">
+                        <h4 class="font-bold text-lg">الاختيار من متعدد</h4>
+                        <p class="text-xs text-blue-100">15 سؤال لاختبار معلوماتك</p>
+                    </div>
+                    <i class="fa-solid fa-list-check text-3xl opacity-80"></i>
+                </button>
+
+                <!-- 2. Bubbles -->
+                <button onclick="startGame('bubbles')" class="btn-bounce bg-gradient-to-r from-cyan-500 to-cyan-600 text-white p-4 rounded-xl shadow-md flex items-center justify-between">
+                    <div class="text-right">
+                        <h4 class="font-bold text-lg">الفقاعات المتساقطة</h4>
+                        <p class="text-xs text-cyan-100">المس الفقاعة الصحيحة قبل سقوطها</p>
+                    </div>
+                    <i class="fa-solid fa-droplet text-3xl opacity-80"></i>
+                </button>
+
+                <!-- 3. Shoot (Targets) -->
+                <button onclick="startGame('shoot')" class="btn-bounce bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-xl shadow-md flex items-center justify-between">
+                    <div class="text-right">
+                        <h4 class="font-bold text-lg">التنشين المتحرك</h4>
+                        <p class="text-xs text-red-100">صِد الهدف الصحيح المتحرك</p>
+                    </div>
+                    <i class="fa-solid fa-bullseye text-3xl opacity-80"></i>
+                </button>
+
+                <!-- 4. True/False -->
+                <button onclick="startGame('tf')" class="btn-bounce bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-xl shadow-md flex items-center justify-between">
+                    <div class="text-right">
+                        <h4 class="font-bold text-lg">صح أم خطأ</h4>
+                        <p class="text-xs text-orange-100">حدد صحة العبارات</p>
+                    </div>
+                    <i class="fa-solid fa-check-double text-3xl opacity-80"></i>
+                </button>
+
+                <!-- 5. Matching -->
+                <button onclick="startGame('match')" class="btn-bounce bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl shadow-md flex items-center justify-between">
+                    <div class="text-right">
+                        <h4 class="font-bold text-lg">لعبة التوصيل</h4>
+                        <p class="text-xs text-green-100">اربط بين المفاهيم الصحيحة</p>
+                    </div>
+                    <i class="fa-solid fa-link text-3xl opacity-80"></i>
+                </button>
+
+                <!-- 6. Fill in the Blanks -->
+                <button onclick="startGame('fill')" class="btn-bounce bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl shadow-md flex items-center justify-between">
+                    <div class="text-right">
+                        <h4 class="font-bold text-lg">الكلمة المفقودة</h4>
+                        <p class="text-xs text-purple-100">أكمل الفراغ لتكتمل العبارة</p>
+                    </div>
+                    <i class="fa-solid fa-puzzle-piece text-3xl opacity-80"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Shared Internal Game Header (Compact) -->
+        <div id="game-header" class="hidden mb-6 bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-3">
+            <div class="flex justify-between items-center w-full">
+                <button onclick="goHome()" class="btn-bounce bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-right"></i> للرئيسية
+                </button>
+                
+                <div class="flex items-center gap-3">
+                    <div class="text-left hidden sm:block">
+                        <p class="text-xs text-gray-500 font-bold">م ڤيڤيان فيليب</p>
+                        <p class="text-sm font-bold text-teal-700">القوى المغناطيسية</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-between items-center w-full border-t border-gray-100 pt-2">
+                <div id="timer-container" class="flex flex-col w-1/3 transition-opacity duration-300">
+                    <div class="flex items-center gap-1 text-red-600 font-bold text-sm">
+                        <i class="fa-solid fa-stopwatch"></i> الوقت: <span id="timer-display">60</span>ث
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                        <div id="timer-bar" class="bg-red-500 h-1.5 rounded-full" style="width: 100%; transition: width 1s linear;"></div>
+                    </div>
+                </div>
+
+                <h2 id="current-game-title" class="text-base sm:text-lg font-bold text-teal-700 text-center w-1/3">عنوان اللعبة</h2>
+                
+                <div class="text-sm sm:text-base font-bold text-gray-600 bg-gray-50 px-3 py-1 rounded-lg border w-1/3 text-left">
+                    النتيجة: <span id="current-score" class="text-teal-600">0</span>/15
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screens Container -->
+        
+        <!-- 1. MCQ Game -->
+        <div id="screen-mcq" class="hidden game-screen">
+            <div class="glass-panel p-6 rounded-2xl">
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+                    <div id="mcq-progress" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <h3 id="mcq-question" class="text-2xl font-bold text-gray-800 mb-6 text-center leading-relaxed"></h3>
+                <div id="mcq-options" class="grid grid-cols-1 gap-3"></div>
+            </div>
+        </div>
+
+        <!-- 2. Bubbles Game (Vertical Falling) -->
+        <div id="screen-bubbles" class="hidden game-screen">
+            <div class="glass-panel p-6 rounded-2xl">
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div id="bubbles-progress" class="bg-cyan-500 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-4 text-center">
+                    <h3 id="bubbles-question" class="text-xl font-bold text-gray-800"></h3>
+                </div>
+                <div id="bubbles-game-area" class="relative w-full h-[450px] overflow-hidden rounded-xl shadow-inner bg-gradient-to-b from-blue-50 to-cyan-100">
+                    <!-- Bubbles injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Shoot Game (Horizontal Targets) -->
+        <div id="screen-shoot" class="hidden game-screen">
+            <div class="glass-panel p-6 rounded-2xl">
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div id="shoot-progress" class="bg-red-500 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 text-center">
+                    <h3 id="shoot-question" class="text-xl font-bold text-gray-800"></h3>
+                </div>
+                <div id="shoot-game-area" class="relative w-full h-[450px] overflow-hidden bg-gray-900 border-4 border-gray-700 rounded-xl shadow-inner">
+                    <!-- Targets injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. True/False Game -->
+        <div id="screen-tf" class="hidden game-screen">
+            <div class="glass-panel p-6 rounded-2xl flex flex-col">
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-6">
+                    <div id="tf-progress" class="bg-orange-500 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <p class="text-center font-bold text-gray-600 mb-6 text-lg">اقرأ العبارة وحدد: صح أم خطأ؟</p>
+                <div class="flex items-center justify-center mb-8">
+                    <div id="tf-statement" class="bg-white border-2 border-orange-300 text-gray-800 font-bold text-xl md:text-2xl py-8 px-6 rounded-2xl shadow-md w-full text-center min-h-[150px] flex items-center justify-center leading-relaxed"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 w-full">
+                    <button onclick="checkTF(true)" class="btn-bounce bg-green-500 hover:bg-green-600 text-white p-6 rounded-xl flex flex-col items-center gap-2 shadow-lg">
+                        <i class="fa-solid fa-check text-5xl mb-2"></i><span class="font-bold text-xl md:text-2xl">صح</span>
+                    </button>
+                    <button onclick="checkTF(false)" class="btn-bounce bg-red-500 hover:bg-red-600 text-white p-6 rounded-xl flex flex-col items-center gap-2 shadow-lg">
+                        <i class="fa-solid fa-xmark text-5xl mb-2"></i><span class="font-bold text-xl md:text-2xl">خطأ</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Match Game -->
+        <div id="screen-match" class="hidden game-screen">
+            <div class="glass-panel p-4 rounded-2xl">
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div id="match-progress" class="bg-green-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <p class="text-center text-gray-600 mb-4 font-bold">المس عنصراً من القائمة الأولى ثم ما يناسبه من الثانية</p>
+                <div class="flex gap-4 justify-between" id="match-container">
+                    <div class="w-1/2 space-y-2 flex flex-col" id="match-list-a"></div>
+                    <div class="w-1/2 space-y-2 flex flex-col" id="match-list-b"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Fill in the Blanks Game -->
+        <div id="screen-fill" class="hidden game-screen">
+            <div class="glass-panel p-4 md:p-6 rounded-2xl flex flex-col">
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4 md:mb-6">
+                    <div id="fill-progress" class="bg-purple-500 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <p class="text-center font-bold text-gray-600 mb-4 md:mb-6 text-sm md:text-lg">اختر الكلمة المناسبة لتكملة العبارة</p>
+                <div class="bg-white border-2 border-purple-200 py-6 px-4 md:py-8 md:px-6 rounded-2xl shadow-sm text-center mb-6 flex items-center justify-center min-h-[120px] md:min-h-[160px]">
+                    <h3 id="fill-sentence" class="text-lg sm:text-xl md:text-3xl font-bold text-gray-800 leading-loose"></h3>
+                </div>
+                <div id="fill-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div id="feedback-content" class="bg-white rounded-2xl p-6 max-w-sm w-full text-center transform scale-50 opacity-0 transition-all duration-300">
+            <div id="feedback-icon" class="text-6xl mb-4"></div>
+            <h3 id="feedback-title" class="text-2xl font-bold mb-2"></h3>
+            <p id="feedback-msg" class="text-gray-600 mb-6 font-bold text-lg leading-relaxed"></p>
+            <button onclick="closeFeedback()" class="bg-teal-500 text-white font-bold py-3 px-8 rounded-xl shadow-md w-full hover:bg-teal-600 transition-colors">متابعة</button>
+        </div>
+    </div>
+
+    <!-- End Game Modal -->
+    <div id="endgame-modal" class="fixed inset-0 bg-teal-900 bg-opacity-95 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
+            <i class="fa-solid fa-trophy text-6xl text-yellow-400 mb-4"></i>
+            <h2 class="text-3xl font-bold text-teal-800 mb-2">اكتملت اللعبة!</h2>
+            <p class="text-xl text-gray-700 mb-6 font-bold">لقد حققت <span id="endgame-score" class="text-teal-600 text-2xl">15</span> من 15</p>
+            <button onclick="goHome()" class="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg text-xl btn-bounce">
+                العودة للرئيسية
+            </button>
+        </div>
+    </div>
+
+    <!-- WhatsApp -->
+    <a href="https://wa.me/201282090905" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 hover:scale-110 transition-all z-40 btn-bounce border-2 border-white z-50">
+        <i class="fa-brands fa-whatsapp text-3xl"></i>
+    </a>
+
+    <script>
+        // --- Utility Functions ---
+        function shuffleArray(originalArray) {
+            let array = originalArray.slice(); 
+            let currentIndex = array.length, randomIndex, tempValue;
+            while (currentIndex > 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                tempValue = array[currentIndex];
+                array[currentIndex] = array[randomIndex];
+                array[randomIndex] = tempValue;
+            }
+            return array;
+        }
+
+        // --- Audio Engine (Disabled as requested) ---
+        function initAudio() {}
+        document.addEventListener('pointerdown', initAudio, { once: true });
+        document.addEventListener('keydown', initAudio, { once: true });
+        function playSound(type) { return; }
+
+        // --- Data Datasets (10 Normal + 5 Hard) per Game (Based ONLY on the provided PDF) ---
+        
+        const mcqData = [
+            { q: "المغناطيس الطبيعى (حجر المغناطيس) اكتُشف قديمًا فى منطقة مغنيسيا بـ:", options: ["اليونان القديمة", "مصر القديمة", "الصين القديمة", "روما القديمة"], ans: "اليونان القديمة" },
+            { q: "من أشكال المغناطيسات الصناعية: القضيب المغناطيسى، المغناطيس على هيئة حرف U، و:", options: ["المغناطيس الأسطوانى", "المغناطيس السائل", "المغناطيس الغازى", "المغناطيس الشفاف"], ans: "المغناطيس الأسطوانى" },
+            { q: "من المواد المغناطيسية التى تنجذب إلى المغناطيس: الحديد والكوبلت و:", options: ["النيكل", "الذهب", "الألومنيوم", "الفضة"], ans: "النيكل" },
+            { q: "من المواد غير المغناطيسية التى لا تنجذب إلى المغناطيس: الذهب والألومنيوم والنحاس و:", options: ["الفضة", "الحديد", "الكوبلت", "النيكل"], ans: "الفضة" },
+            { q: "قوة جذب المغناطيس تكون أكبر ما يمكن عند طرفيه، وهذان الطرفان يعرفان باسم:", options: ["قطبى المغناطيس", "مركز المغناطيس", "منتصف المغناطيس", "محور المغناطيس"], ans: "قطبى المغناطيس" },
+            { q: "عند تعليق مغناطيس بحرية ليتحرك، فإن قطبه الشمالى N يشير تقريبًا إلى:", options: ["القطب الشمالى الجغرافى للأرض", "القطب الجنوبى الجغرافى للأرض", "الشرق دائمًا", "الغرب دائمًا"], ans: "القطب الشمالى الجغرافى للأرض" },
+            { q: "الأقطاب المغناطيسية المتشابهة (نفس النوع) عند تقريبها من بعضها:", options: ["تتنافر", "تتجاذب", "لا تتأثر ببعضها", "تلتحم معًا"], ans: "تتنافر" },
+            { q: "الأقطاب المغناطيسية المختلفة (نوعًا) عند تقريبها من بعضها:", options: ["تتجاذب", "تتنافر", "لا تتأثر ببعضها", "تنعدم قوتها"], ans: "تتجاذب" },
+            { q: "عند تجزئة المغناطيس الواحد إلى عدة أجزاء، فإن كل جزء منها:", options: ["يُكوّن مغناطيسًا جديدًا له قطبان شمالى وجنوبى", "يفقد خاصيته المغناطيسية تمامًا", "يصبح قطبًا مغناطيسيًا منفردًا", "يتحول إلى مادة غير مغناطيسية"], ans: "يُكوّن مغناطيسًا جديدًا له قطبان شمالى وجنوبى" },
+            { q: "المنطقة المحيطة بالمغناطيس والتى تؤثر بقوة مغناطيسية على المواد المغناطيسية الموجودة فيها تسمى:", options: ["المجال المغناطيسى", "المجال الكهربى", "المجال الجذبى", "المجال الحرارى"], ans: "المجال المغناطيسى" },
+            // Hard
+            { q: "خطوط المجال المغناطيسى الوهمية تخرج من القطب الشمالى للمغناطيس و:", options: ["تنتهى عند القطب الجنوبى له", "لا تنتهى أبدًا", "تخرج من القطب الجنوبى أيضًا", "تلتف حول القطب الشمالى فقط"], ans: "تنتهى عند القطب الجنوبى له" },
+            { q: "قوة جذب المغناطيس لبرادة الحديد لا تتعلق بنفس الكثافة على كل أجزائه، بل تكون أكبر ما يمكن عند:", options: ["طرفيه (قطبيه)", "منتصفه فقط", "جميع أجزائه بالتساوى", "الجزء الأوسط فقط"], ans: "طرفيه (قطبيه)" },
+            { q: "خبراء الأدلة الجنائية يستخدمون فرشاة مغناطيسية وبرادة حديد مغناطيسية للكشف عن البصمات لأن برادة الحديد:", options: ["تلتصق بالمواد الدهنية التى تتركها البصمات غير الواضحة", "تتفاعل كيميائيًا مع الجلد", "تُصدر ضوءًا يكشف البصمة", "تُذيب الأسطح الملساء"], ans: "تلتصق بالمواد الدهنية التى تتركها البصمات غير الواضحة" },
+            { q: "البوصلة أداة قديمة تستخدم لتحديد الاتجاهات الجغرافية الأساسية للأرض وتتكون من إبرة مغناطيسية:", options: ["حرة الحركة تتمركز على محورها", "ثابتة تمامًا لا تتحرك", "مصنوعة من الألومنيوم", "مصنوعة من النحاس"], ans: "حرة الحركة تتمركز على محورها" },
+            { q: "لا يمكن تصنيع بوصلة داخل علبة من النحاس أو البلاستيك بإبرة مغناطيسية بشكل جيد إذا كانت العلبة نفسها:", options: ["ليست عائقًا لأنها غير مغناطيسية أصلًا وذلك أمر ممكن", "مغناطيسية بشدة", "مصنوعة من الحديد الخالص", "شفافة تمامًا"], ans: "ليست عائقًا لأنها غير مغناطيسية أصلًا وذلك أمر ممكن" }
+        ];
+
+        const bubblesData = [
+            { q: "المغناطيس الطبيعى يُعرف أيضًا باسم:", options: ["حجر المغناطيس", "حجر الجير", "حجر الكلس", "حجر الرمل"], ans: "حجر المغناطيس" },
+            { q: "بدأت صناعة المغناطيسات الصناعية فى القرن:", options: ["التاسع عشر", "الثامن عشر", "العشرين", "السابع عشر"], ans: "التاسع عشر" },
+            { q: "من أمثلة المغناطيسات الصناعية: مغناطيس على هيئة حدوة حصان يسمى أيضًا مغناطيس:", options: ["على هيئة حرف U", "قضيبى مستقيم", "أسطوانى فقط", "كروى الشكل"], ans: "على هيئة حرف U" },
+            { q: "الإبرة المغناطيسية المستخدمة فى البوصلة مصنوعة من مادة:", options: ["مغناطيسية", "غير مغناطيسية", "زجاجية", "خشبية"], ans: "مغناطيسية" },
+            { q: "علبة البوصلة تكون مصنوعة من مادة النحاس أو البلاستيك لأنها مواد:", options: ["غير مغناطيسية", "مغناطيسية بشدة", "موصلة للكهرباء بشدة", "عازلة للصوت"], ans: "غير مغناطيسية" },
+            { q: "عند تعليق مغناطيس بخيط من الحرير حرًا ليتحرك، فإن قطبه الجنوبى S يشير تقريبًا إلى:", options: ["القطب الجنوبى الجغرافى للأرض", "القطب الشمالى الجغرافى للأرض", "الشرق دائمًا", "الغرب دائمًا"], ans: "القطب الجنوبى الجغرافى للأرض" },
+            { q: "الأرض تعمل كمغناطيس ضخم يؤثر على المغناطيسات الأخرى فيجعلها تأخذ اتجاهًا:", options: ["ثابتًا دائمًا", "عشوائيًا متغيرًا", "أفقيًا فقط فى كل مكان", "رأسيًا فقط فى كل مكان"], ans: "ثابتًا دائمًا" },
+            { q: "لا يمكن الحصول على قطب مغناطيسى منفرد لأن تجزئة المغناطيس تنتج عنه:", options: ["مغناطيسات جديدة لكل منها قطبان", "قطب واحد منفرد فقط", "مادة غير مغناطيسية تمامًا", "تلاشى الخاصية المغناطيسية"], ans: "مغناطيسات جديدة لكل منها قطبان" },
+            { q: "قوة التجاذب أو التنافر المتبادلة بين المغناطيس والمواد المغناطيسية الموجودة فى مجاله عبارة عن قوة:", options: ["تجاذب فقط", "تنافر فقط", "تجاذب أو تنافر معًا", "لا توجد قوة إطلاقًا"], ans: "تجاذب أو تنافر معًا" },
+            { q: "خطوط المجال المغناطيسى بين قطبين متشابهين لمغناطيسين تتزاحم عند:", options: ["منتصف المسافة بينهما وتتباعد عنهما", "أطراف المغناطيسين فقط", "لا تتزاحم أبدًا", "تختفى تمامًا"], ans: "منتصف المسافة بينهما وتتباعد عنهما" },
+            // Hard
+            { q: "المواد المغناطيسية تشمل: الحديد والكوبلت والنيكل والحديد المطاوع، بينما تشمل المواد غير المغناطيسية:", options: ["الذهب والفضة والألومنيوم والنحاس", "الحديد والكوبلت فقط", "النيكل والحديد المطاوع فقط", "جميع الفلزات بلا استثناء"], ans: "الذهب والفضة والألومنيوم والنحاس" },
+            { q: "قطار المونوريل الكهربى وقطار الماجليف المغناطيسى من التطبيقات التكنولوجية المرتبطة بموضوع:", options: ["القوى المغناطيسية", "القوى النووية", "القوى الكهروستاتيكية فقط", "قوى الاحتكاك"], ans: "القوى المغناطيسية" },
+            { q: "عند تعليق مغناطيسين حرين بجوار بعضهما مع تقريب قطبين مختلفين منهما، تكون النتيجة:", options: ["تجاذب المغناطيسين", "تنافر المغناطيسين", "عدم تأثرهما ببعضهما", "دوران عشوائى لهما"], ans: "تجاذب المغناطيسين" },
+            { q: "عند تقريب قطبين متشابهين من مغناطيسين معلقين حرين، تكون النتيجة:", options: ["تنافر المغناطيسين", "تجاذب المغناطيسين", "عدم تأثرهما ببعضهما", "التحام المغناطيسين"], ans: "تنافر المغناطيسين" },
+            { q: "المجال المغناطيسى يمتد خلال الفراغ ويؤثر على المواد المغناطيسية الموضوعة فيه بقوة تبعد عن بُعد، وهو ما يشبه:", options: ["المجال الكهربى حول شحنة كهربية", "التيار الكهربى المباشر فقط", "الاحتكاك بين سطحين", "الضغط الجوى فقط"], ans: "المجال الكهربى حول شحنة كهربية" }
+        ];
+
+        const shootData = [
+            { q: "ابتدأت صناعة المغناطيسات الصناعية اعتمادًا على خاصية المغناطيس الطبيعى فى:", options: ["جذب بعض الأجسام المعدنية", "توليد كهرباء ساكنة", "عزل الحرارة", "توصيل الصوت"], ans: "جذب بعض الأجسام المعدنية" },
+            { q: "قوة جذب المغناطيس لبرادة الحديد لا تكون متساوية على طول القضيب، بل تكون أضعف ما يمكن عند:", options: ["منتصف المغناطيس", "طرفى المغناطيس", "كل نقطة بالتساوى", "خارج المغناطيس تمامًا"], ans: "منتصف المغناطيس" },
+            { q: "قانون التجاذب والتنافر بين الأقطاب المغناطيسية ينص على أن الأقطاب المتشابهة تتنافر والأقطاب المختلفة:", options: ["تتجاذب", "تتنافر أيضًا", "لا تتأثر ببعضها", "تتعادل كهربيًا"], ans: "تتجاذب" },
+            { q: "عند تعليق قضيب مغناطيسى بخيط من الحرير حرًا ليتحرك، فإنه يستقر بحيث يشير أحد قطبيه تقريبًا نحو:", options: ["الشمال الجغرافى", "أى اتجاه عشوائى", "الأسفل دائمًا", "الأعلى دائمًا"], ans: "الشمال الجغرافى" },
+            { q: "الأرض تعمل كمغناطيس ضخم له قطب مغناطيسى جنوبى بالقرب من القطب الشمالى الجغرافى للأرض، وهذا يفسر:", options: ["استقرار إبرة البوصلة فى اتجاه ثابت", "عدم عمل البوصلة نهائيًا", "دوران الأرض حول محورها", "حدوث الفصول الأربعة"], ans: "استقرار إبرة البوصلة فى اتجاه ثابت" },
+            { q: "لا يمكن الحصول على قطب مغناطيسى منفرد لأنه عند تجزئة المغناطيس الواحد إلى أجزاء، يتكون من كل جزء:", options: ["مغناطيس جديد له قطبان شمالى وجنوبى", "قطب شمالى منفرد فقط", "قطب جنوبى منفرد فقط", "مادة غير مغناطيسية"], ans: "مغناطيس جديد له قطبان شمالى وجنوبى" },
+            { q: "خطوط المجال المغناطيسى الوهمية لا تتقاطع مع بعضها البعض، وتبدأ من قطب المغناطيس وتنتهى عند القطب:", options: ["الآخر", "نفسه", "خارج المغناطيس تمامًا", "لا تنتهى إطلاقًا"], ans: "الآخر" },
+            { q: "خطوط المجال المغناطيسى بين قطبين مختلفين لمغناطيسين تتزاحم عند:", options: ["منتصف المسافة بينهما وتتقارب", "أطراف المغناطيسين البعيدة فقط", "لا تتزاحم أبدًا", "تتلاشى فى المنتصف"], ans: "منتصف المسافة بينهما وتتقارب" },
+            { q: "المجال المغناطيسى هو المنطقة المحيطة بالمغناطيس والتى تظهر فيها تأثير:", options: ["القوة المغناطيسية", "القوة الكهربية فقط", "قوة الجاذبية فقط", "قوة الاحتكاك فقط"], ans: "القوة المغناطيسية" },
+            { q: "هل القوة المتبادلة بين المغناطيس والمواد المغناطيسية الموجودة فى مجاله عبارة عن قوة تنافر أم تجاذب أم كليهما؟", options: ["كليهما (تجاذب أو تنافر حسب الأقطاب)", "تنافر فقط دائمًا", "تجاذب فقط دائمًا", "لا توجد قوة على الإطلاق"], ans: "كليهما (تجاذب أو تنافر حسب الأقطاب)" },
+            // Hard
+            { q: "من الأمثلة على المواد المغناطيسية غير النقية والتى تتفاعل مع المغناطيس: الحديد المطاوع والكوبلت و:", options: ["النيكل", "الألومنيوم", "الذهب", "الفضة"], ans: "النيكل" },
+            { q: "أربعة مغناطيسات حلقية مثبتة على ساق رأسية بحيث علم أن القطب المغناطيسى السفلى للمغناطيس الأول قطب شمالى، فإن القطب المتجه له من المغناطيس الثانى الملامس له يكون:", options: ["قطبًا جنوبيًا (للتجاذب)", "قطبًا شماليًا (للتنافر)", "بلا قطبية محددة", "متعادلًا مغناطيسيًا"], ans: "قطبًا جنوبيًا (للتجاذب)" },
+            { q: "قطار المونوريل الكهربى وقطار الماجليف المغناطيسى يعتمدان على مبدأ:", options: ["التنافر والتجاذب المغناطيسى للرفع والدفع", "الاحتكاك المباشر بالقضبان فقط", "الدفع بالبخار", "الطاقة الشمسية المباشرة فقط"], ans: "التنافر والتجاذب المغناطيسى للرفع والدفع" },
+            { q: "عند غمس قضيب مغناطيسى فى برادة حديد، تلاحظ أن كمية البرادة الملتصقة تختلف باختلاف موضعها على القضيب، وتكون:", options: ["أكبر ما يمكن عند الطرفين", "متساوية فى كل مكان", "أكبر ما يمكن فى المنتصف فقط", "معدومة تمامًا عند الطرفين"], ans: "أكبر ما يمكن عند الطرفين" },
+            { q: "المجال المغناطيسى يشبه المجال الكهربى فى أن كلًا منهما يمتد خلال الفراغ ويؤثر على الأجسام المناسبة الموجودة فيه بقوة:", options: ["عن بُعد دون اتصال مباشر", "بالتلامس المباشر فقط", "بالتسخين فقط", "بالتبريد فقط"], ans: "عن بُعد دون اتصال مباشر" }
+        ];
+
+        const tfData = [
+            { text: "اكتُشف المغناطيس الطبيعى (حجر المغناطيس) فى منطقة مغنيسيا باليونان القديمة.", isCorrect: true },
+            { text: "من أشكال المغناطيسات الصناعية: القضيب المغناطيسى، المغناطيس على هيئة حرف U، والمغناطيس الأسطوانى.", isCorrect: true },
+            { text: "الذهب والفضة والألومنيوم من المواد المغناطيسية التى تنجذب للمغناطيس.", isCorrect: false },
+            { text: "الحديد والكوبلت والنيكل من المواد المغناطيسية التى تنجذب للمغناطيس.", isCorrect: true },
+            { text: "قوة جذب المغناطيس تكون أكبر ما يمكن عند طرفيه (قطبيه).", isCorrect: true },
+            { text: "الأقطاب المغناطيسية المتشابهة تتجاذب فيما بينها.", isCorrect: false },
+            { text: "الأقطاب المغناطيسية المختلفة تتجاذب فيما بينها.", isCorrect: true },
+            { text: "عند تجزئة المغناطيس الواحد إلى أجزاء، يمكن الحصول على قطب مغناطيسى منفرد.", isCorrect: false },
+            { text: "المجال المغناطيسى هو المنطقة المحيطة بالمغناطيس التى تظهر فيها تأثير القوة المغناطيسية.", isCorrect: true },
+            { text: "عند تعليق مغناطيس بحرية، يشير قطبه الشمالى تقريبًا إلى القطب الشمالى الجغرافى للأرض.", isCorrect: true },
+            // Hard
+            { text: "خطوط المجال المغناطيسى الوهمية تتقاطع مع بعضها البعض دائمًا.", isCorrect: false },
+            { text: "خطوط المجال المغناطيسى بين قطبين مختلفين لمغناطيسين تتزاحم عند منتصف المسافة بينهما.", isCorrect: true },
+            { text: "علماء الأدلة الجنائية يستخدمون فرشاة مغناطيسية وبرادة حديد للكشف عن البصمات غير الواضحة.", isCorrect: true },
+            { text: "قطار الماجليف المغناطيسى يعتمد على مبدأ التنافر والتجاذب المغناطيسى.", isCorrect: true },
+            { text: "البوصلة تُصنع فى علبة من الحديد الخالص لضمان دقة عملها.", isCorrect: false }
+        ];
+
+        const matchData = [
+            { a: "حجر المغناطيس", b: "المغناطيس الطبيعى الذى اكتُشف فى منطقة مغنيسيا باليونان" },
+            { a: "المواد المغناطيسية", b: "مثل الحديد والكوبلت والنيكل التى تنجذب للمغناطيس" },
+            { a: "المواد غير المغناطيسية", b: "مثل الذهب والفضة والألومنيوم والنحاس" },
+            { a: "قطبا المغناطيس", b: "الموضعان اللذان تكون فيهما قوة الجذب أكبر ما يمكن" },
+            { a: "قانون التجاذب والتنافر", b: "الأقطاب المتشابهة تتنافر والمختلفة تتجاذب" },
+            { a: "المجال المغناطيسى", b: "المنطقة المحيطة بالمغناطيس التى يظهر فيها تأثيره" },
+            { a: "خطوط المجال المغناطيسى", b: "خطوط وهمية تخرج من القطب الشمالى وتنتهى عند الجنوبى" },
+            { a: "البوصلة", b: "أداة قديمة لتحديد الاتجاهات الجغرافية باستخدام إبرة مغناطيسية" },
+            { a: "الأرض", b: "تعمل كمغناطيس ضخم يوجه إبرة البوصلة" },
+            { a: "تجزئة المغناطيس", b: "ينتج عنها مغناطيسات جديدة لكل منها قطبان" },
+            // Hard
+            { a: "قطار الماجليف", b: "يعتمد على مبدأ التنافر والتجاذب المغناطيسى" },
+            { a: "علبة البوصلة", b: "تُصنع من مادة غير مغناطيسية مثل النحاس أو البلاستيك" },
+            { a: "خبراء الأدلة الجنائية", b: "يستخدمون فرشاة مغناطيسية وبرادة حديد للكشف عن البصمات" },
+            { a: "مغناطيس على هيئة حدوة حصان", b: "يُعرف أيضًا بالمغناطيس على هيئة حرف U" },
+            { a: "الحديد المطاوع", b: "من المواد المغناطيسية التى تنجذب إلى المغناطيس" }
+        ];
+
+        const fillData = [
+            { text: "اكتُشف المغناطيس الطبيعى فى منطقة مغنيسيا فى ... القديمة.", blank: "اليونان", options: ["اليونان", "مصر", "الصين", "روما"] },
+            { text: "من المواد المغناطيسية: الحديد والكوبلت و... .", blank: "النيكل", options: ["النيكل", "الذهب", "الألومنيوم", "الفضة"] },
+            { text: "من المواد غير المغناطيسية: الذهب والفضة و... .", blank: "الألومنيوم", options: ["الألومنيوم", "الحديد", "الكوبلت", "النيكل"] },
+            { text: "قوة جذب المغناطيس تكون أكبر ما يمكن عند ... المغناطيس.", blank: "طرفى", options: ["طرفى", "منتصف", "وسط", "قاعدة"] },
+            { text: "الأقطاب المغناطيسية المتشابهة ... فيما بينها.", blank: "تتنافر", options: ["تتنافر", "تتجاذب", "تتعادل", "تلتحم"] },
+            { text: "الأقطاب المغناطيسية المختلفة ... فيما بينها.", blank: "تتجاذب", options: ["تتجاذب", "تتنافر", "تتعادل", "تنفصل"] },
+            { text: "لا يمكن الحصول على قطب مغناطيسى ... بتجزئة المغناطيس.", blank: "منفرد", options: ["منفرد", "مزدوج", "ثلاثى", "معدوم"] },
+            { text: "المنطقة المحيطة بالمغناطيس التى يظهر فيها تأثيره تسمى المجال ... .", blank: "المغناطيسى", options: ["المغناطيسى", "الكهربى", "الجذبى", "الحرارى"] },
+            { text: "تُستخدم ... لتحديد الاتجاهات الجغرافية الأساسية للأرض.", blank: "البوصلة", options: ["البوصلة", "الترمومتر", "الساعة الشمسية", "الميزان"] },
+            { text: "الأرض تعمل كـ... ضخم يوجه إبرة البوصلة.", blank: "مغناطيس", options: ["مغناطيس", "مولد كهربى", "عازل حرارى", "موصل صوتى"] },
+            // Hard
+            { text: "خطوط المجال المغناطيسى تخرج من القطب الشمالى وتنتهى عند القطب ... .", blank: "الجنوبى", options: ["الجنوبى", "الشمالى نفسه", "المنتصف", "لا تنتهى"] },
+            { text: "علبة البوصلة تُصنع من مادة ... حتى لا تؤثر على الإبرة المغناطيسية.", blank: "غير مغناطيسية", options: ["غير مغناطيسية", "مغناطيسية بشدة", "معدنية ثقيلة", "مشعة"] },
+            { text: "قطار الماجليف يعتمد على مبدأ ... المغناطيسى.", blank: "التنافر والتجاذب", options: ["التنافر والتجاذب", "الاحتكاك المباشر", "الدفع بالبخار", "الطاقة الشمسية"] },
+            { text: "يستخدم خبراء الأدلة الجنائية فرشاة مغناطيسية وبرادة ... للكشف عن البصمات.", blank: "حديد", options: ["حديد", "نحاس", "ذهب", "رصاص"] },
+            { text: "من أشكال المغناطيسات الصناعية المغناطيس على هيئة حرف ... .", blank: "U", options: ["U", "S", "N", "Z"] }
+        ];
+
+        // --- Core Logic & Timer ---
+        let gameState = { currentScreen: 'home', activeGame: null, score: 0, questionIndex: 0, subLevel: 0, tempData: null, onFeedbackClose: null };
+        const titles = { mcq: "الاختيار من متعدد", match: "لعبة التوصيل", tf: "صح أم خطأ", fill: "الكلمة المفقودة", bubbles: "الفقاعات المتساقطة", shoot: "التنشين المتحرك" };
+        let gameTimer, timeLeft = 60, maxTime = 60;
+        let animTimeout;
+
+        function startTimer() {
+            clearInterval(gameTimer); 
+            // All games get 60 seconds
+            maxTime = 60;
+            timeLeft = maxTime; 
+            updateTimerUI();
+            
+            gameTimer = setInterval(() => {
+                timeLeft--; updateTimerUI();
+                if (timeLeft <= 0) { clearInterval(gameTimer); handleTimeout(); }
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(gameTimer); }
+        
+        function resumeTimer() {
+            clearInterval(gameTimer);
+            gameTimer = setInterval(() => {
+                timeLeft--; updateTimerUI();
+                if (timeLeft <= 0) { clearInterval(gameTimer); handleTimeout(); }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            document.getElementById('timer-display').innerText = timeLeft;
+            document.getElementById('timer-bar').style.width = (timeLeft / maxTime * 100) + '%';
+        }
+
+        function pauseAnimations() {
+            document.querySelectorAll('.game-anim-element').forEach(t => t.style.animationPlayState = 'paused');
+        }
+
+        function handleTimeout() {
+            playSound('wrong');
+            pauseAnimations();
+
+            if (gameState.activeGame === 'match') { forceMatchSkip(); return; }
+
+            const qData = gameState.tempData[gameState.questionIndex];
+            let correctAns = qData.ans || (qData.isCorrect ? "صح" : "خطأ") || qData.blank;
+            
+            showFeedback(false, `انتهى الوقت! الإجابة الصحيحة هي: ${correctAns}`, () => {
+                gameState.questionIndex++;
+                if (gameState.activeGame === 'mcq') loadMCQQuestion();
+                else if (gameState.activeGame === 'tf') loadTFQuestion();
+                else if (gameState.activeGame === 'fill') loadFillQuestion();
+                else if (gameState.activeGame === 'bubbles') loadBubblesQuestion();
+                else if (gameState.activeGame === 'shoot') loadShootQuestion();
+            });
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('#main-container > div').forEach(el => {
+                if (el.id !== 'game-header' && el.id !== 'screen-home') el.classList.add('hidden');
+            });
+            if (screenId === 'home') {
+                document.getElementById('screen-home').classList.remove('hidden');
+                document.getElementById('game-header').classList.add('hidden');
+            } else {
+                document.getElementById('screen-home').classList.add('hidden');
+                document.getElementById('game-header').classList.remove('hidden');
+                document.getElementById('screen-' + screenId).classList.remove('hidden');
+                document.getElementById('current-game-title').innerText = titles[gameState.activeGame];
+                updateScoreDisplay();
+            }
+            gameState.currentScreen = screenId;
+        }
+
+        function goHome() {
+            playSound('click'); stopTimer(); pauseAnimations(); clearTimeout(animTimeout);
+            document.getElementById('feedback-modal').classList.add('hidden');
+            gameState.onFeedbackClose = null; showScreen('home');
+            document.getElementById('endgame-modal').classList.add('hidden'); gameState.activeGame = null;
+        }
+
+        function startGame(gameType) {
+            playSound('click'); initAudio(); 
+            gameState.activeGame = gameType; gameState.score = 0; gameState.questionIndex = 0; gameState.subLevel = 0;
+            
+            if (gameType === 'bubbles' || gameType === 'shoot') {
+                document.getElementById('timer-container').classList.add('opacity-0');
+            } else {
+                document.getElementById('timer-container').classList.remove('opacity-0');
+            }
+
+            if (gameType === 'mcq') initMCQ();
+            else if (gameType === 'match') initMatch();
+            else if (gameType === 'tf') initTF();
+            else if (gameType === 'fill') initFill();
+            else if (gameType === 'bubbles') initBubbles();
+            else if (gameType === 'shoot') initShoot();
+            showScreen(gameType);
+        }
+
+        function updateScoreDisplay() { document.getElementById('current-score').innerText = gameState.score; }
+        function endGame() {
+            stopTimer(); document.getElementById('endgame-score').innerText = gameState.score;
+            document.getElementById('endgame-modal').classList.remove('hidden'); playSound('correct');
+        }
+
+        function showFeedback(isCorrect, message, callback) {
+            const modal = document.getElementById('feedback-modal'); const content = document.getElementById('feedback-content');
+            const icon = document.getElementById('feedback-icon'); const title = document.getElementById('feedback-title');
+            const msg = document.getElementById('feedback-msg');
+            gameState.onFeedbackClose = callback;
+
+            if (isCorrect) {
+                playSound('correct'); icon.innerHTML = '<i class="fa-solid fa-circle-check text-green-500 popup-anim"></i>';
+                title.innerText = "إجابة صحيحة!"; title.className = "text-2xl font-bold mb-2 text-green-600";
+            } else {
+                playSound('wrong'); icon.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500 popup-anim"></i>';
+                title.innerText = "إجابة خاطئة"; title.className = "text-2xl font-bold mb-2 text-red-600";
+            }
+            msg.innerText = message || ""; modal.classList.remove('hidden');
+            setTimeout(() => { content.classList.remove('scale-50', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
+        }
+
+        function closeFeedback() {
+            playSound('click'); const modal = document.getElementById('feedback-modal');
+            const content = document.getElementById('feedback-content');
+            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-50', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                if (gameState.onFeedbackClose) { gameState.onFeedbackClose(); gameState.onFeedbackClose = null; }
+            }, 300);
+        }
+
+        // --- 1. MCQ ---
+        function initMCQ() { gameState.tempData = shuffleArray(mcqData); loadMCQQuestion(); }
+        function loadMCQQuestion() {
+            if (gameState.questionIndex >= 15) return endGame();
+            const qData = gameState.tempData[gameState.questionIndex];
+            document.getElementById('mcq-question').innerText = (gameState.questionIndex + 1) + ". " + qData.q;
+            document.getElementById('mcq-progress').style.width = `${(gameState.questionIndex / 15) * 100}%`;
+            const optionsDiv = document.getElementById('mcq-options'); optionsDiv.innerHTML = '';
+            shuffleArray(qData.options).forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "btn-bounce w-full bg-white border-2 border-blue-200 hover:bg-blue-50 text-blue-900 font-bold py-4 px-6 rounded-xl text-right shadow-sm text-lg transition-colors";
+                btn.innerText = opt; btn.onclick = () => { stopTimer(); checkMCQ(opt, qData.ans); };
+                optionsDiv.appendChild(btn);
+            });
+            startTimer();
+        }
+        function checkMCQ(selected, correct) {
+            const isCorrect = selected === correct;
+            if (isCorrect) gameState.score++; updateScoreDisplay();
+            showFeedback(isCorrect, isCorrect ? "أحسنت!" : `الإجابة الصحيحة هي: ${correct}`, () => { gameState.questionIndex++; loadMCQQuestion(); });
+        }
+
+        // --- 2. Bubbles Game (CSS Animation) ---
+        function initBubbles() { gameState.tempData = shuffleArray(bubblesData); loadBubblesQuestion(); }
+        function loadBubblesQuestion() {
+            if (gameState.questionIndex >= 15) return endGame();
+            const qData = gameState.tempData[gameState.questionIndex];
+            document.getElementById('bubbles-question').innerText = (gameState.questionIndex + 1) + ". " + qData.q;
+            document.getElementById('bubbles-progress').style.width = `${(gameState.questionIndex / 15) * 100}%`;
+            
+            const container = document.getElementById('bubbles-game-area'); container.innerHTML = '';
+            const opts = shuffleArray(qData.options);
+            const xPositions = [2, 27, 52, 77]; 
+
+            opts.forEach((opt, idx) => {
+                const bubble = document.createElement('div');
+                bubble.className = `game-anim-element anim-fall game-bubble absolute flex items-center justify-center p-2 w-20 h-20 sm:w-28 sm:h-28 text-xs sm:text-sm font-bold text-center cursor-pointer btn-bounce z-10`;
+                bubble.style.left = `${xPositions[idx]}%`;
+                bubble.innerText = opt;
+                bubble.onclick = () => processAnimGame(opt, qData.ans, 'bubbles');
+                container.appendChild(bubble);
+            });
+            
+            clearTimeout(animTimeout);
+            animTimeout = setTimeout(() => {
+                if (gameState.currentScreen === 'bubbles') processAnimTimeout('bubbles', qData.ans);
+            }, 40000);
+        }
+
+        // --- 3. Shoot Game (CSS Animation) ---
+        function initShoot() { gameState.tempData = shuffleArray(shootData); loadShootQuestion(); }
+        function loadShootQuestion() {
+            if (gameState.questionIndex >= 15) return endGame();
+            const qData = gameState.tempData[gameState.questionIndex];
+            document.getElementById('shoot-question').innerText = (gameState.questionIndex + 1) + ". " + qData.q;
+            document.getElementById('shoot-progress').style.width = `${(gameState.questionIndex / 15) * 100}%`;
+            
+            const container = document.getElementById('shoot-game-area'); container.innerHTML = '';
+            const opts = shuffleArray(qData.options);
+            const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']; 
+            const yPositions = [10, 35, 60, 85]; 
+            const directions = [1, -1, 1, -1]; 
+
+            opts.forEach((opt, idx) => {
+                const target = document.createElement('div');
+                let animClass = directions[idx] === 1 ? 'anim-right' : 'anim-left';
+                target.className = `game-anim-element ${animClass} horizontal-target absolute text-gray-800 p-1 rounded-full text-center font-bold flex flex-col items-center justify-center w-20 h-20 sm:w-24 sm:h-24 text-[10px] sm:text-sm cursor-pointer z-10 btn-bounce`;
+                target.style.borderColor = colors[idx]; 
+                target.style.top = `calc(${yPositions[idx]}% - 20px)`;
+                
+                target.innerHTML = `<i class="fa-solid fa-bullseye text-2xl sm:text-3xl mb-1" style="color: ${colors[idx]}"></i><span>${opt}</span>`;
+                target.onclick = () => processAnimGame(opt, qData.ans, 'shoot');
+                container.appendChild(target);
+            });
+            
+            clearTimeout(animTimeout);
+            animTimeout = setTimeout(() => {
+                if (gameState.currentScreen === 'shoot') processAnimTimeout('shoot', qData.ans);
+            }, 35000);
+        }
+
+        // Shared processing for Animated Games (Bubbles & Shoot)
+        function processAnimGame(selected, correct, gameType) {
+            clearTimeout(animTimeout);
+            pauseAnimations();
+            const isCorrect = selected === correct;
+            if(isCorrect) gameState.score++; updateScoreDisplay();
+            showFeedback(isCorrect, isCorrect ? "إصابة دقيقة وممتازة!" : `للأسف أخطأت الهدف! الإجابة هي: ${correct}`, () => {
+                gameState.questionIndex++;
+                if(gameType === 'bubbles') loadBubblesQuestion(); else loadShootQuestion();
+            });
+        }
+
+        function processAnimTimeout(gameType, correct) {
+            playSound('wrong');
+            pauseAnimations();
+            showFeedback(false, `اختفت الأهداف! الإجابة الصحيحة هي: ${correct}`, () => {
+                gameState.questionIndex++;
+                if(gameType === 'bubbles') loadBubblesQuestion(); else loadShootQuestion();
+            });
+        }
+
+        // --- 4. True/False ---
+        function initTF() { gameState.tempData = shuffleArray(tfData); loadTFQuestion(); }
+        function loadTFQuestion() {
+            if (gameState.questionIndex >= 15) return endGame();
+            const currentItem = gameState.tempData[gameState.questionIndex];
+            document.getElementById('tf-progress').style.width = `${(gameState.questionIndex / 15) * 100}%`;
+            const tfStatement = document.getElementById('tf-statement'); tfStatement.innerText = currentItem.text;
+            tfStatement.classList.remove('popup-anim'); void tfStatement.offsetWidth; tfStatement.classList.add('popup-anim');
+            startTimer();
+        }
+        function checkTF(userAnswer) {
+            stopTimer(); const currentItem = gameState.tempData[gameState.questionIndex];
+            const isCorrect = currentItem.isCorrect === userAnswer;
+            if(isCorrect) gameState.score++; updateScoreDisplay();
+            showFeedback(isCorrect, isCorrect ? "إجابة صحيحة وممتازة!" : `إجابة خاطئة. العبارة ${currentItem.isCorrect?"صحيحة":"خاطئة"}.`, () => {
+                gameState.questionIndex++; loadTFQuestion();
+            });
+        }
+
+        // --- 5. Matching ---
+        function initMatch() { gameState.tempData = shuffleArray(matchData); gameState.subLevel = 0; gameState.questionIndex = 0; loadMatchRound(); }
+        function loadMatchRound() {
+            if (gameState.subLevel >= 3) return endGame();
+            const startIndex = gameState.subLevel * 5; const roundItems = gameState.tempData.slice(startIndex, startIndex + 5);
+            document.getElementById('match-progress').style.width = `${(gameState.questionIndex / 15) * 100}%`;
+            const listA = shuffleArray(roundItems.map(item => ({id: item.a, text: item.a, type: 'A'})));
+            const listB = shuffleArray(roundItems.map(item => ({id: item.a, text: item.b, type: 'B'}))); 
+            renderMatchList('match-list-a', listA); renderMatchList('match-list-b', listB);
+            matchSelectedA = null; matchSelectedB = null; startTimer();
+        }
+        function renderMatchList(containerId, items) {
+            const container = document.getElementById(containerId); container.innerHTML = '';
+            items.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = "match-item bg-white border-2 border-gray-200 text-gray-700 font-bold py-3 px-2 rounded-lg shadow-sm text-xs sm:text-sm text-center min-h-[60px] flex items-center justify-center";
+                btn.innerText = item.text; btn.dataset.id = item.id; btn.dataset.type = item.type;
+                btn.onclick = () => handleMatchClick(btn); container.appendChild(btn);
+            });
+        }
+        function handleMatchClick(btn) {
+            if(btn.classList.contains('matched') || btn.classList.contains('timeout-error')) return;
+            playSound('click'); const type = btn.dataset.type;
+            document.querySelectorAll(`#match-list-${type.toLowerCase()} .match-item`).forEach(el => {
+                if(!el.classList.contains('matched') && !el.classList.contains('timeout-error')) el.classList.remove('selected');
+            });
+            btn.classList.add('selected');
+            if (type === 'A') matchSelectedA = btn; else matchSelectedB = btn;
+            if (matchSelectedA && matchSelectedB) {
+                stopTimer(); const idA = matchSelectedA.dataset.id; const idB = matchSelectedB.dataset.id;
+                if (idA === idB) {
+                    matchSelectedA.classList.remove('selected'); matchSelectedA.classList.add('matched');
+                    matchSelectedB.classList.remove('selected'); matchSelectedB.classList.add('matched');
+                    gameState.score++; gameState.questionIndex++; updateScoreDisplay();
+                    document.getElementById('match-progress').style.width = `${(gameState.questionIndex / 15) * 100}%`;
+                    checkMatchRoundProgress(true);
+                } else {
+                    playSound('wrong'); matchSelectedA.classList.add('error'); matchSelectedB.classList.add('error');
+                    let a = matchSelectedA, b = matchSelectedB;
+                    setTimeout(() => { a.classList.remove('selected', 'error'); b.classList.remove('selected', 'error'); resumeTimer(); }, 500);
+                }
+                matchSelectedA = null; matchSelectedB = null;
+            }
+        }
+        function forceMatchSkip() {
+            matchSelectedA = null; matchSelectedB = null;
+            document.querySelectorAll('.match-item').forEach(el => el.classList.remove('selected'));
+            let unmatchedA = Array.from(document.querySelectorAll('#match-list-a .match-item')).find(el => !el.classList.contains('matched') && !el.classList.contains('timeout-error'));
+            if(unmatchedA) {
+                let id = unmatchedA.dataset.id; let unmatchedB = document.querySelector(`#match-list-b .match-item[data-id="${id}"]`);
+                showFeedback(false, "انتهى الوقت! فقدت هذه النقطة.", () => {
+                    unmatchedA.classList.add('timeout-error'); 
+                    if(unmatchedB) unmatchedB.classList.add('timeout-error');
+                    gameState.questionIndex++; document.getElementById('match-progress').style.width = `${(gameState.questionIndex / 15) * 100}%`;
+                    checkMatchRoundProgress(false);
+                });
+            }
+        }
+        function checkMatchRoundProgress(wasCorrect) {
+            const totalDone = document.querySelectorAll('#match-list-a .matched').length + document.querySelectorAll('#match-list-a .timeout-error').length;
+            if (totalDone === 5) {
+                if(wasCorrect) playSound('correct');
+                setTimeout(() => { gameState.subLevel++; loadMatchRound(); }, 1000);
+            } else {
+                if(wasCorrect) {
+                    playSound('correct'); 
+                }
+                startTimer();
+            }
+        }
+
+        // --- 6. Fill in the Blanks ---
+        function initFill() { gameState.tempData = shuffleArray(fillData); loadFillQuestion(); }
+        function loadFillQuestion() {
+            if (gameState.questionIndex >= 15) return endGame();
+            const currentItem = gameState.tempData[gameState.questionIndex];
+            document.getElementById('fill-progress').style.width = `${(gameState.questionIndex / 15) * 100}%`;
+            const sentenceHtml = currentItem.text.replace('...', '<span class="inline-block border-b-4 border-dashed border-purple-400 min-w-[70px] md:min-w-[100px] text-center text-purple-600 px-1 md:px-2 pb-1 mx-1 md:mx-2 relative top-1">؟</span>');
+            const sentenceEl = document.getElementById('fill-sentence'); sentenceEl.innerHTML = sentenceHtml;
+            sentenceEl.classList.remove('popup-anim'); void sentenceEl.offsetWidth; sentenceEl.classList.add('popup-anim');
+            const optionsContainer = document.getElementById('fill-options'); optionsContainer.innerHTML = '';
+            shuffleArray(currentItem.options).forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "btn-bounce bg-white hover:bg-purple-50 border-2 border-purple-200 text-purple-800 font-bold py-3 md:py-4 px-3 md:px-6 rounded-xl shadow-sm text-sm sm:text-base md:text-lg transition-colors";
+                btn.innerText = opt; btn.onclick = () => { stopTimer(); checkFill(opt, currentItem.blank); };
+                optionsContainer.appendChild(btn);
+            });
+            startTimer();
+        }
+        function checkFill(selected, correct) {
+            const isCorrect = selected === correct;
+            if (isCorrect) gameState.score++; updateScoreDisplay();
+            const sentenceEl = document.getElementById('fill-sentence');
+            if (isCorrect) sentenceEl.innerHTML = sentenceEl.innerHTML.replace('؟', selected).replace('border-dashed', 'border-solid border-green-500 text-green-600');
+            else sentenceEl.innerHTML = sentenceEl.innerHTML.replace('؟', selected).replace('border-dashed', 'border-solid border-red-500 text-red-600 line-through');
+            showFeedback(isCorrect, isCorrect ? "ممتاز! الكلمة في مكانها الصحيح." : `خطأ! الكلمة الصحيحة هي: ${correct}`, () => {
+                gameState.questionIndex++; loadFillQuestion();
+            });
+        }
+
+    </script>
+</body>
+</html>
